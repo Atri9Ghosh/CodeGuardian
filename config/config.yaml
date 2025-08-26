@@ -1,0 +1,134 @@
+# CodeGuardian Configuration File
+
+# Server Configuration
+server:
+  port: 8080
+  environment: development
+  log_level: info
+
+# Security Rules Configuration
+security_rules:
+  secrets:
+    - pattern: "password\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "high"
+      message: "Hardcoded password detected"
+      category: "secrets"
+    
+    - pattern: "secret\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "critical"
+      message: "Secret found in code"
+      category: "secrets"
+    
+    - pattern: "credential\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "high"
+      message: "Hardcoded credential detected"
+      category: "secrets"
+    
+    - pattern: "passwd\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "high"
+      message: "Hardcoded password detected"
+      category: "secrets"
+
+  api_keys:
+    - pattern: "api_key\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "critical"
+      message: "API key found in code"
+      category: "api_keys"
+    
+    - pattern: "token\\s*=\\s*['\"][^'\"]+['\"]"
+      severity: "high"
+      message: "Token found in code"
+      category: "api_keys"
+    
+    - pattern: "sk-[a-zA-Z0-9]{48}"
+      severity: "critical"
+      message: "OpenAI API key found in code"
+      category: "api_keys"
+    
+    - pattern: "pk-[a-zA-Z0-9]{48}"
+      severity: "critical"
+      message: "OpenAI API key found in code"
+      category: "api_keys"
+
+  vulnerabilities:
+    - pattern: "eval\\s*\\("
+      severity: "high"
+      message: "Dangerous eval() function detected"
+      category: "vulnerabilities"
+    
+    - pattern: "exec\\s*\\("
+      severity: "high"
+      message: "Dangerous exec() function detected"
+      category: "vulnerabilities"
+    
+    - pattern: "SELECT.*WHERE.*\\+"
+      severity: "high"
+      message: "Potential SQL injection detected"
+      category: "vulnerabilities"
+    
+    - pattern: "document\\.write\\s*\\("
+      severity: "medium"
+      message: "Potential XSS vulnerability"
+      category: "vulnerabilities"
+    
+    - pattern: "innerHTML\\s*="
+      severity: "medium"
+      message: "Potential XSS vulnerability"
+      category: "vulnerabilities"
+    
+    - pattern: "os\\.system\\s*\\("
+      severity: "high"
+      message: "Command injection risk"
+      category: "vulnerabilities"
+    
+    - pattern: "subprocess\\.call\\s*\\("
+      severity: "high"
+      message: "Command injection risk"
+      category: "vulnerabilities"
+
+  code_quality:
+    - pattern: "Math\\.random\\(\\)"
+      severity: "medium"
+      message: "Insecure random number generation"
+      category: "code_quality"
+    
+    - pattern: "md5\\s*\\("
+      severity: "medium"
+      message: "Weak MD5 hash function used"
+      category: "code_quality"
+    
+    - pattern: "sha1\\s*\\("
+      severity: "medium"
+      message: "Weak SHA1 hash function used"
+      category: "code_quality"
+    
+    - pattern: "console\\.log\\s*\\("
+      severity: "low"
+      message: "Debug logging found in production code"
+      category: "code_quality"
+    
+    - pattern: "TODO|FIXME|HACK"
+      severity: "low"
+      message: "Development comment found"
+      category: "code_quality"
+
+# AI Configuration
+ai:
+  model: "gpt-4"
+  max_tokens: 2000
+  temperature: 0.1
+  timeout: 60s
+
+# Scan Configuration
+scan:
+  max_file_size: 1048576  # 1MB
+  timeout: 300s
+  max_concurrent_scans: 10
+  min_confidence_threshold: 0.7
+
+# Monitoring Configuration
+monitoring:
+  enable_metrics: true
+  metrics_port: 9090
+  health_check_interval: 30s
+  health_check_timeout: 5s

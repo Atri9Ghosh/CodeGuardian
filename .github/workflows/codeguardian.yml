@@ -1,0 +1,110 @@
+name: CodeGuardian Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch full history for better analysis
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Run CodeGuardian Security Scan
+        env:
+          CODEGUARDIAN_API_KEY: ${{ secrets.CODEGUARDIAN_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the base and head SHAs
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+          REPO="${{ github.repository }}"
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          
+          # Call CodeGuardian API
+          curl -X POST "https://api.codeguardian.dev/api/v1/scan" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $CODEGUARDIAN_API_KEY" \
+            -d "{
+              \"repository\": \"$REPO\",
+              \"pull_request\": $PR_NUMBER,
+              \"base_sha\": \"$BASE_SHA\",
+              \"head_sha\": \"$HEAD_SHA\"
+            }"
+
+      - name: Comment Results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: scanResult } = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🔒 CodeGuardian Security Scan
+            
+            Security scan completed for this pull request.
+            
+            **Repository**: ${context.repo.owner}/${context.repo.repo}
+            **Pull Request**: #${context.issue.number}
+            **Base SHA**: ${context.payload.pull_request.base.sha}
+            **Head SHA**: ${context.payload.pull_request.head.sha}
+            
+            The scan results will be posted as a separate comment by the CodeGuardian service.`
+            });
+
+  # Optional: Add additional security checks
+  additional-checks:
+    name: Additional Security Checks
+    runs-on: ubuntu-latest
+    needs: security-scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Bandit for Python security
+        if: contains(github.event.pull_request.files.*.name, '.py')
+        run: |
+          pip install bandit
+          bandit -r . -f json -o bandit-results.json || true
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/secrets
+            p/owasp-top-ten
+          output-format: sarif
+          output-file: semgrep-results.sarif
+
+      - name: Upload Semgrep results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'semgrep-results.sarif'
