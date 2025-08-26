@@ -347,14 +347,6 @@ make run
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-- 📖 [Quick Start Guide](QUICKSTART.md) - Get up and running quickly
-- 📧 Email: support@codeguardian.dev
-- 💬 Discord: [CodeGuardian Community](https://discord.gg/codeguardian)
-- 📖 Documentation: [docs.codeguardian.dev](https://docs.codeguardian.dev)
-- 🐛 [Report Issues](https://github.com/your-org/codeguardian/issues)
-
 ## 🙏 Acknowledgments
 
 - OpenAI for providing the GPT models
